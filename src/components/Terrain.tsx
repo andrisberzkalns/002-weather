@@ -4,7 +4,7 @@ Command: npx gltfjsx@6.2.13 .\terrain.glb
 */
 
 import React, { useRef } from 'react'
-import { Color, TextureLoader, RectAreaLight, RepeatWrapping } from "three";
+import { Color, TextureLoader, RectAreaLight, RepeatWrapping, Vector2 } from "three";
 import { useLoader } from "@react-three/fiber";
 import { useGLTF, useHelper, MeshWobbleMaterial, shaderMaterial } from '@react-three/drei'
 import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js';
@@ -64,26 +64,24 @@ export const Terrain: React.FC<{ clouds: number }> = (props) => {
     >
       {/* <rectAreaLight
         ref={areaLight}
-        args={['white', 0.01, 1000, 1000]}
-        position={[-200, 60, 200]}
-        rotation-x={Math.PI / 2}
+        args={['white', 0.1, 1000, 1000]}
+        position={[-200, 10, 200]}
       /> */}
 
       <mesh
         geometry={nodes.Plane.geometry}
-        // material={nodes.Plane.material}
         receiveShadow
         castShadow
         scale={100}
-        material={materials['Material.001']}
       >
         <meshStandardMaterial
           attach="material"
           side={2}
           map={colorMap}
-          bumpMap={bumpMap}
           normalMap={normalMap}
+          // normalScale={new Vector2(0.1, 0.1)}
           roughnessMap={roughnessMap}
+          roughness={0.7}
           aoMap={aoMap}
         />
       </mesh>
@@ -96,22 +94,24 @@ export const Terrain: React.FC<{ clouds: number }> = (props) => {
           scale={10}
           renderOrder={10}
         >
+          {/* <MeshWobbleMaterial
+            factor={0.04}
+            speed={0.1}
+            attach="material"
+            side={2}
+            transparent={true}
+            opacity={props.clouds}
+          /> */}
           <meshStandardMaterial
+            // factor={0.002}
+            // speed={0.5}
+            emissive={"#ffffff"}
+            emissiveIntensity={1-props.clouds}
             attach="material"
             side={2}
             transparent={true}
             opacity={props.clouds}
           />
-          {/* <meshPhysicalMaterial
-            // factor={0.002}
-            // speed={0.5}
-            attach="material"
-            side={2}
-            transparent={true}
-            opacity={props.clouds}
-            thickness={0.1}
-            attenuationDistance={10000}
-          /> */}
         </mesh>
       }
     </group>

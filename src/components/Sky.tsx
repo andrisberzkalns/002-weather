@@ -5,7 +5,7 @@ import { CDirectionalLight, CPointLight, CSpotLight } from "~/components/Lights"
 import { useControls } from 'leva';
 import { scale } from "~/utils/scale";
 
-export const Sky: React.FC<{fogIntensity: number, cloudIntensity: number, sun: {azimuth: number, altitude: number, timeIndex: number}}> = (props = { fogIntensity: 0, cloudIntensity: 0, sun: { azimuth: 180, altitude: 1, timeIndex: 1} }) => {
+export const Sky: React.FC<{fogIntensity: number, cloudIntensity: number, sun: {azimuth: number, altitude: number}}> = (props) => {
     const { sun, cloudIntensity, fogIntensity } = props;
 
     let dirIntensity = 50;
@@ -26,7 +26,7 @@ export const Sky: React.FC<{fogIntensity: number, cloudIntensity: number, sun: {
     ampIntensity = ampIntensity * (1 - cloudIntensity);
     dirIntensity = dirIntensity * (1 - cloudIntensity);
 
-    if (ampIntensity < 0) ampIntensity = 0;
+    if (ampIntensity < 0.02) ampIntensity = 0.02;
     if (dirIntensity < 0) dirIntensity = 0;
 
     // console.log("dirIntensity", dirIntensity);
@@ -60,20 +60,20 @@ export const Sky: React.FC<{fogIntensity: number, cloudIntensity: number, sun: {
                 intensity={dirIntensity}
             />
             <ambientLight intensity={ampIntensity}/>
-            {
-                cloudIntensity < 0.1 && sun.altitude < 0.15 && fogIntensity < 0.15 &&
-                <Stars radius={140} depth={1} count={10000} factor={6} saturation={0} fade speed={1} />
-            }
+
             <DreiSky 
                 distance={400000}
                 sunPosition={[sunX, sunY, sunZ]}
                 inclination={sun.altitude}
-                turbidity={0.5} // Set to 100
-                rayleigh={0.1}
-                mieCoefficient={0.003}
-                mieDirectionalG={0.8}
-                // azimuth={sun.azimuth / 8}
+                turbidity={0.3} // Set to 100
+                rayleigh={1.6}
+                mieCoefficient={0.0002}
+                mieDirectionalG={0.9}
             />
+            {
+                cloudIntensity < 0.1 && sun.altitude < 0.15 && fogIntensity < 0.15 &&
+                <Stars radius={140} depth={1} count={10000} factor={6} saturation={0} fade speed={1} />
+            }
         </>
     )
 }

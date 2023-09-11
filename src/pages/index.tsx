@@ -3,10 +3,10 @@ import Link from "next/link";
 
 import { api } from "~/utils/api";
 import { createRoot } from 'react-dom/client'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useLayoutEffect, useMemo } from 'react'
+import { useInterval } from "react-use";
 import { Canvas, useFrame } from '@react-three/fiber'
-import { DirectionalLight, DirectionalLightHelper, SpotLight, SpotLightHelper, PointLight, PointLightHelper } from "three";
-
+import { DirectionalLight, DirectionalLightHelper, SpotLight, SpotLightHelper, PointLight, PointLightHelper, Vector3 } from "three";
 import { CameraControls, Center, PerspectiveCamera, Stage, Stars, Text3D, useFont, Environment, useGLTF, useHelper, SoftShadows, MeshTransmissionMaterial } from '@react-three/drei'
 import { Bloom, DepthOfField, EffectComposer, GodRays, Noise, Vignette } from '@react-three/postprocessing'
 import { Terrain } from "../components/Terrain";
@@ -19,35 +19,10 @@ import { Cloud } from "~/components/Cloud";
 import { NodeToyMaterial, NodeToyTick } from '@nodetoy/react-nodetoy'
 import { data } from '~/shader/test';
 import { Lightning } from "~/components/Lightning";
-
+import { Rain } from "~/components/Rain";
+import { weatherCodeMap } from "~/utils/weatherCodeMap";
 
 import SunCalc from "suncalc";
-
-const DEBUG = true;
-
-
-const Box: React.FC<any> = (props) => {
-  // This reference gives us direct access to the THREE.Mesh object
-  const ref: React.MutableRefObject<any> = useRef()
-  // Hold state for hovered and clicked events
-  const [hovered, hover] = useState(false)
-  const [clicked, click] = useState(false)
-  // Subscribe this component to the render-loop, rotate the mesh every frame
-  useFrame((state, delta) => (ref?.current) && (ref.current.rotation.x += delta))
-  // Return the view, these are regular Threejs elements expressed in JSX
-  return (
-    <mesh
-      {...props}
-      ref={ref}
-      scale={clicked ? 1.5 : 1}
-      onClick={(event) => click(!clicked)}
-      onPointerOver={(event) => hover(true)}
-      onPointerOut={(event) => hover(false)}>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color={hovered ? 'hotpink' : 'orange'} />
-    </mesh>
-  )
-}
 
 const floatToTime = (index: number) => {
   // Convert float to 24 hour time format
@@ -57,155 +32,159 @@ const floatToTime = (index: number) => {
   return `${hours}:${minutes}:${seconds}`;
 }
 
+const currentDateTime = new Date();
 
 export default function Home() {
-  const controler = useControls('Sun Controls', {
-    timeIndex: {
-        value: 0.75,
-        min: 0,
-        max: 1,
-    },
+  const [location, setLocation] = useState("Riga");
+
+
+  const controler = useControls('Coordinates', {
     coordinates: {
       long: 56.95218,
       lat: 24.09764
-    },
-    cloudIntensity: {
-      value: 0.5,
-      min: 0,
-      max: 1
-    },
-    fogIntensity: {
-      value: 0,
-      min: 0,
-      max: 1
-    },
-    lightning: {
-      value: false
     }
-});
+  });
 
-  const weather = api.weather.getWeather.useQuery({ location: "Riga" });
+  const [dateTime, setDateTime] = useState(currentDateTime);
+  const [long, setLong] = useState(controler.coordinates.long || 56.95218);
+  const [lat, setLat] = useState(controler.coordinates.lat || 24.09764);
+  const weather = api.weather.getWeather.useQuery({ location: location });
+  console.log(weather.data);
+  var sun = SunCalc.getPosition(dateTime, long, lat);
 
-  const long = controler.coordinates.long;
-  const lat = controler.coordinates.lat;
-
-  // console.log(weather);
-  // console.log(weather.data);
-  // const font = useFont("/fonts/Roboto-Black.json");
-
-  // get today's sunlight times for London
-  var times = SunCalc.getTimes(new Date(), long, lat);
-
-  // format sunrise time from the Date object
-  var sunriseStr = times.sunrise.getHours() + ':' + times.sunrise.getMinutes();
-
-  // Get current time
-  var currentTime = new Date();
-  // console.log(currentTime.getDate());
-  var currentTimestamp = currentTime.getTime();
-  const middayTime = new Date('July 1, 1999, 12:00:00');
-  const midnightTime = new Date('July 1, 1999, 00:00:00');
-  const time = floatToTime(controler.timeIndex);
-  console.log(time);
-  console.log("times", times);
-  const dateTime = new Date('September 10, 2023 ' + time);
-  var sunPos = SunCalc.getPosition(dateTime, long, lat);
-
-  // get position of the sun (azimuth and altitude) at today's sunrise
-  var sunrisePos = SunCalc.getPosition(times.sunrise, long, lat);
-  var sunsetPos = SunCalc.getPosition(times.sunset, long, lat);
-  console.log("sunrisePos", sunrisePos);
-  console.log("sunsetPos", sunsetPos);
-
-  // get sunrise azimuth in degrees
-  var sunriseAzimuth = sunrisePos.azimuth * 180 / Math.PI;
-
-  // console.log("times", times);
-  // console.log("sunriseStr", sunriseStr);
-  // console.log("sunrisePos", sunrisePos);
-  // console.log("sunsetPos", sunsetPos);
-  // console.log("sunriseAzimuth", sunriseAzimuth);
-  // console.log("sunPos", sunPos);
-
+  useInterval(() => {
+    console.log("tick");
+    weather.refetch();
+    setDateTime(new Date());
+  }, 1000 * 60 * 2);
 
   return (
     <>
       <Head>
-        <title>Create T3 App</title>
+        <title>Weather</title>
         <meta name="description" content="Generated by create-t3-app" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c]">
-        <Canvas shadows>
-          <Fog intensity={controler.fogIntensity} sun={{...sunPos, timeIndex: controler.timeIndex}}/>
-          <PerspectiveCamera
-            makeDefault
-            position={[0, 0.5, 5]}
-            fov={75}
-            aspect={2}
-            near={0.1}
-            far={1000}
-          />
-
-          {/* <Cloud /> */}
-          <Terrain clouds={controler.cloudIntensity}/>
-          {/* <Hamster /> */}
-          {/* <Box /> */}
-          
-          <Center top>
-            <Text3D
-              font={"/fonts/Roboto-Black.json"}
-              castShadow
-              receiveShadow
-              position={[-0.4, 0.1, 0]}
-              rotation={[0, 0, -0.02]}
-            >
-              {weather?.data?.current?.temp_c}°C
-              <meshStandardMaterial
-                emissive={"#ffeedd"}
-                emissiveIntensity={0.2}
-                metalness={0.9}
-              />
-              {/* <NodeToyMaterial data={data} /> */}
-
-            </Text3D>
-          </Center>
-
-
-          <Text3D
-            font={"/fonts/Roboto-Black.json"}
-            castShadow
-            receiveShadow
-            position={[2.5, 0.25, -2]}
-            rotation={[0, 0, 0.07]}
-            scale={0.4}
-          >
-            {weather?.data?.current?.humidity}%
-            <meshStandardMaterial
-              emissive={"#ffeedd"}
-              emissiveIntensity={0.2}
-              metalness={0.9}
-            />
-            {/* <NodeToyMaterial data={data} /> */}
-
-          </Text3D>
-
-          <CameraControls />
-          {/* <CPointLight/> */}
-          {/* <Grid args={[1000,1000,1000,1000]} renderOrder={10}/> */}
-
-          <Lightning enabled={controler.lightning}/>
-
-          <Sky sun={{...sunPos, timeIndex: controler.timeIndex}} cloudIntensity={controler.cloudIntensity} fogIntensity={controler.fogIntensity}/>
-
-            {/* <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} /> */}
-          <EffectComposer>
-            <Bloom luminanceThreshold={2.5} luminanceSmoothing={0.2} height={1000} opacity={0.02}/>
-            <Noise opacity={0.03} />
-            <Vignette eskil={false} offset={0.04} darkness={0.6} />
-          </EffectComposer>
-        </Canvas>
+        {
+          weather?.data && sun && <Scene sun={sun} weather={weather.data} dateTime={dateTime} />
+        }
+        <footer className="fixed bottom-0 h-6 bg-black opacity-50 w-full text-center">
+          <p className="text-white">
+            © 2023 Copyright: <a className="font-semibold" href="https://berzkalns.com/" target="_blank">Andris Bērzkalns</a>
+          </p>
+        </footer>
       </main>
     </>
   );
+}
+
+
+const Scene: React.FC<any> = (props) => {
+  const { sun, weather, dateTime } = props;
+  const {
+    temp_c,
+    wind_kph,
+    wind_degree,
+    wind_dir,
+    pressure_mb,
+    precip_mm,
+    humidity,
+    cloud,
+    feelslike_c,
+    uv,
+    condition
+  } = weather.current;
+  const { code, text } = condition;
+  // const controler = useControls('Weather controls', {
+  //   timeIndex: {
+  //       value: 0.75,
+  //       min: 0,
+  //       max: 1,
+  //   },
+  //   coordinates: {
+  //     long: 56.95218,
+  //     lat: 24.09764
+  //   },
+  //   cloudIntensity: {
+  //     value: cloud / 100,
+  //     min: 0,
+  //     max: 1
+  //   },
+  //   fogIntensity: {
+  //     value: 0,
+  //     min: 0,
+  //     max: 1
+  //   },
+  //   lightning: {
+  //     value: false
+  //   },
+  //   rainIntensity: {
+  //     value: 0,
+  //     min: 0,
+  //     max: 1
+  //   }
+  // });
+
+  const weatherValues: any = weatherCodeMap[code];
+
+  return (
+    <Canvas shadows>
+      <Fog intensity={weatherValues.fog} sun={sun} />
+      {/* <Cloudy intensity={1}/> */}
+      <PerspectiveCamera
+        makeDefault
+        position={[0, 0.8, 5]}
+        fov={75}
+        aspect={2}
+        near={0.1}
+        far={1000}
+      />
+
+      {/* <CameraControls /> */}
+      <Rain intensity={weatherValues.rain} />
+      <Lightning enabled={weatherValues.lightning} />
+      <Terrain clouds={cloud / 100} />
+      <Center top>
+        <Text3D
+          font={"/fonts/Roboto-Black.json"}
+          castShadow
+          receiveShadow
+          position={[-0.4, 0.1, 0]}
+          rotation={[0, 0, -0.02]}
+        >
+          {temp_c}°C
+          <meshStandardMaterial
+            emissive={"#ffeedd"}
+            emissiveIntensity={0.2}
+            metalness={0.9}
+          />
+        </Text3D>
+      </Center>
+
+      <Text3D
+        font={"/fonts/Roboto-Black.json"}
+        castShadow
+        receiveShadow
+        position={[2.5, 0.25, -2]}
+        rotation={[0, 0, 0.07]}
+        scale={0.4}
+      >
+        {humidity}%
+        <meshStandardMaterial
+          emissive={"#ffeedd"}
+          emissiveIntensity={0.2}
+          metalness={0.9}
+        />
+      </Text3D>
+      <Sky sun={sun} cloudIntensity={cloud / 100} fogIntensity={weatherValues.fog} />
+
+      {/* <DepthOfField focusDistance={0} focalLength={0.02} bokehScale={2} height={480} /> */}
+      <EffectComposer>
+        <Bloom luminanceThreshold={2.5} luminanceSmoothing={0.2} height={1000} opacity={0.02} />
+        <Noise opacity={0.03} />
+        <Vignette eskil={false} offset={0.04} darkness={0.6} />
+      </EffectComposer>
+    </Canvas>
+  )
 }

@@ -1,10 +1,9 @@
 import { scale } from "~/utils/scale";
 
-export const Fog: React.FC<{ intensity: number, sun: {azimuth: number, altitude: number, timeIndex: number} }> = ({ intensity, sun }) => {
+export const Fog: React.FC<{ intensity: number, sun: {azimuth: number, altitude: number} }> = ({ intensity, sun }) => {
 
     const FOG_MIN_COLOR = 40;
     let fogColor = 255;
-    console.log(sun);
 
     if (sun) {
         if (sun.altitude <= -0.1) {
@@ -16,7 +15,6 @@ export const Fog: React.FC<{ intensity: number, sun: {azimuth: number, altitude:
         }
     }
     if (fogColor < FOG_MIN_COLOR) fogColor = FOG_MIN_COLOR;
-    console.log(fogColor);
     fogColor = Math.floor(fogColor);
     return (
         <>
