@@ -1,11 +1,11 @@
 import { env } from "~/env.mjs";
 
 export const weatherApi = {
-    getWeather: async (city: string) => {
+    getWeather: async (q: string) => {
         // TODO add check if city is valid
-        console.log("Getting weather for city: " + city);
+        console.log("Getting weather for location: " + q);
         if (env.NODE_ENV == "production" || env.NODE_ENV == "development") {
-            const response = await fetch(`https://api.weatherapi.com/v1/current.json?key=${env.WEATHER_API_KEY}&q=${city}&aqi=no`);
+            const response = await fetch(`https://api.weatherapi.com/v1/current.json?key=${env.WEATHER_API_KEY}&q=${q}&aqi=no`);
             const data = await response.json();
             return data;
         } 

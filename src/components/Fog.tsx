@@ -18,11 +18,11 @@ export const Fog: React.FC<{ intensity: number, sun: {azimuth: number, altitude:
     fogColor = Math.floor(fogColor);
     return (
         <>
-            <fogExp2 attach="fog" args={[`rgb(${fogColor},${fogColor},${fogColor})`, 0.05 * intensity + 0.001]} />
-            <group
+            <fogExp2 attach="fog" args={[`rgb(${fogColor},${fogColor},${fogColor})`, 0.05 * intensity + 0.005]} />
+            {/* <group
                 position={[0, 0, -scale(intensity, 0, 1, 400, 100)]}
                 scale={[2000, 2000, 2000]}
-            >
+            > */}
                 {/* <mesh>
                     <planeGeometry/>
                     <meshStandardMaterial
@@ -33,7 +33,7 @@ export const Fog: React.FC<{ intensity: number, sun: {azimuth: number, altitude:
                         opacity={intensity}
                     />
                 </mesh> */}
-            </group>
+            {/* </group> */}
         </>
     );
 }

@@ -44,7 +44,7 @@ export const weatherCodeMap: any = {
         rain: 0,
         snow: 0,
         hale: 0,
-        cloud: null,
+        cloud: 0.95,
         lightning: false
 	},
 	1030: {
