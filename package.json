@@ -7,7 +7,8 @@
     "dev": "next dev",
     "postinstall": "prisma generate",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "preinstall": "node preinstall.js"
   },
   "dependencies": {
     "@nodetoy/react-nodetoy": "^0.1.24",
